@@ -1,0 +1,33 @@
+name: "Validar Aprobacion Admin"
+
+on:
+  pull_request_review:
+    types: [submitted, edited, dismissed]
+  pull_request:
+    types: [opened, synchronize, reopened]
+
+jobs:
+  check-approvals:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Validar Reviewer
+        uses: actions/github-script@v6
+        with:
+          script: |
+            const admins = ['Chapinguin', 'Arevalo023'];
+            
+            const { data: reviews } = await github.rest.pulls.listReviews({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              pull_number: context.issue.number,
+            });
+
+            const hasAdminApproval = reviews.some(review => 
+              review.state === 'APPROVED' && admins.includes(review.user.login)
+            );
+
+            if (hasAdminApproval) {
+              console.log("Aprobado por un administrador.");
+            } else {
+              core.setFailed("Error: Se requiere la aprobación de uno de los 6 administradores para desbloquear el Merge.");
+            }
