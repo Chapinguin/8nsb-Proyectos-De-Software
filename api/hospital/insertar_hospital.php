@@ -14,7 +14,7 @@ requireRole("Administrador");
 
 $input = json_decode(file_get_contents("php://input"), true);
 
-$uniOrg = trim($input["uniOrg"] ?? "");
+$uniOrg = trim($input["uniOrg"] ?? $input["uni_org"] ?? "");
 $nomuo = trim($input["nomuo"] ?? "");
 $direccion = trim($input["direccion"] ?? "");
 $director = trim($input["director"] ?? "");

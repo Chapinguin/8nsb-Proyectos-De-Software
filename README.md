@@ -20,7 +20,7 @@ Este proyecto es un sistema integral de gestión hospitalaria diseñado para adm
 ## Requisitos Previos
 
 1. Tener instalado un servidor local (XAMPP).
-2. PHP 7.4 o superior.
+2. PHP 7.4
 3. MySQL
 
 ##  Instalación y Configuración
@@ -32,6 +32,7 @@ Este proyecto es un sistema integral de gestión hospitalaria diseñado para adm
    - Abre **phpMyAdmin**.
    - Crea una nueva base de datos llamada `hospital_db`.
    - Importa el archivo `hospital_db.sql` que se encuentra en la raíz del proyecto.
+   - NOTA IMPORTANTEEE EL ARCHIVO DE LA DB ESTA COMENTADO DALE CTRL + A PARA SELECCIONARLO TODO, DESPUES DALE CTRL +K +U PARA DESCOMENTARLO Y PARA VOLVERLO A COMENTAR DALE CTRL + K +C 
 
 3. **Verificar Conexión:**
    Asegúrate de que las credenciales en `config/database.php` coincidan con las de tu servidor local:
@@ -48,8 +49,8 @@ Este proyecto es un sistema integral de gestión hospitalaria diseñado para adm
 ##  Cómo Correr el Proyecto
 
 ### Opción 1: Usando el acceso rápido (Windows)
-Si estás en Windows y usas XAMPP con las rutas por defecto, puedes ejecutar el archivo:
-- `run.bat`
+Si estás en Windows y usas XAMPP con las rutas por defecto, puedes ejecutar el archivo EN LA TERMINAL:
+- `./run.bat`
 
 ### Opción 2: Manualmente
 1. Inicia los módulos de **Apache** y **MySQL** en el Panel de Control de XAMPP.

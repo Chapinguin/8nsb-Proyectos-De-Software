@@ -44,6 +44,12 @@ const MODULES_CONFIG = [
     roles: ['Administrador'] 
   },
   { 
+    id: 'habitaciones', 
+    label: 'Habitaciones', 
+    icon: '🛏️', 
+    roles: ['Administrador'] 
+  },
+  { 
     id: 'medicos', 
     label: 'Médicos', 
     icon: '👨‍⚕️', 
@@ -61,11 +67,17 @@ const MODULES_CONFIG = [
     icon: '🚪', 
     roles: ['Administrador', 'Recepcion'] 
   },
-  { 
+  {
     id: 'estudios', 
     label: 'Estudios', 
     icon: '🧪', 
     roles: ['Administrador', 'Medico', 'Laboratorio'] 
+  },
+  {
+    id: 'reportes',
+    label: 'Reportes',
+    icon: '📊',
+    roles: ['Administrador', 'Recepcion']
   },
   {
     id: 'usuarios',
