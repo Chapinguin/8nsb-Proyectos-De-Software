@@ -90,7 +90,32 @@ const MODULES_CONFIG = [
     label: 'Configurar Roles',
     icon: '🔐',
     roles: ['Administrador']
+  },
+  {
+    id: 'laboratorios',
+    label: 'Laboratorios',
+    icon: '🔐',
+    roles: ['Administrador']
+  },
+  {
+    id: 'departamentos',
+    label: 'Departamentos',
+    icon: '🔐',
+    roles: ['Administrador']
+  },
+    {
+    id: 'consultorios',
+    label: 'Consultorios',
+    icon: '🔐',
+    roles: ['Administrador']
+  },
+  {
+    id: 'quirotfanos',
+    label: 'Quirófanos',
+    icon: '🔐',
+    roles: ['Administrador']
   }
+
 ];
 
 // --- Session Management ---
