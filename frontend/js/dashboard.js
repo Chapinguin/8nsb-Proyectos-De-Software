@@ -80,17 +80,42 @@ const MODULES_CONFIG = [
     roles: ['Administrador', 'Recepcion']
   },
   {
+    id: 'laboratorios',
+    label: 'Laboratorios',
+    icon: '🔬',
+    roles: ['Administrador', 'Laboratorio', 'Medico']
+  },
+  {
+    id: 'departamentos',
+    label: 'Departamentos',
+    icon: '🏢',
+    roles: ['Administrador', 'Recepcion', 'Medico']
+  },
+    {
+    id: 'consultorios',
+    label: 'Consultorios',
+    icon: '🥼',
+    roles: ['Administrador', 'Recepcion', 'Medico']
+  },
+  {
+    id: 'quirofanos',
+    label: 'Quirófanos',
+    icon: '👩‍⚕️',
+    roles: ['Administrador', 'Quirofano']
+  },
+  {
     id: 'usuarios',
     label: 'Usuarios y Accesos',
     icon: '👥',
     roles: ['Administrador']
   },
-  {
+    {
     id: 'roles',
     label: 'Configurar Roles',
     icon: '🔐',
     roles: ['Administrador']
   }
+
 ];
 
 // --- Session Management ---
