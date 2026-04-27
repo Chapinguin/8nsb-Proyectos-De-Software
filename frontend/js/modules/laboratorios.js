@@ -1,9 +1,15 @@
+/**
+ * Laboratorios Module - Hospital HIS
+ */
+
 window.Modules.laboratorios = {
   data: [],
   filteredData: [],
+  areas: [],
 
   init() {
     this.renderLayout();
+    this.loadAreas();
     this.loadData();
   },
 
@@ -11,12 +17,16 @@ window.Modules.laboratorios = {
     const contentArea = document.getElementById("contentArea");
 
     contentArea.innerHTML = `
-      <div class="card" style="margin-bottom:1rem; display:flex; justify-content:space-between;">
-        <input type="text" id="searchLab" placeholder="Buscar laboratorio..." />
-        <button id="addLabBtn" class="btn btn-primary">+ Nuevo</button>
+      <div class="card" style="margin-bottom: 1rem; display: flex; justify-content: space-between; align-items: center;">
+        <div style="flex: 1; max-width: 400px;">
+          <input type="text" id="searchLab" class="form-group" style="margin-bottom: 0; width: 100%;" placeholder="🔍 Buscar laboratorio por nombre o área...">
+        </div>
+        <button id="addLabBtn" class="btn btn-primary">
+          <span>+</span> Registrar Laboratorio
+        </button>
       </div>
 
-      <div id="labTable"></div>
+      <div id="labTableContainer" class="table-container"></div>
     `;
 
     document.getElementById("searchLab")
@@ -24,6 +34,24 @@ window.Modules.laboratorios = {
 
     document.getElementById("addLabBtn")
       .addEventListener("click", () => this.showModal());
+  },
+
+  async loadAreas() {
+    try {
+      const res = await fetch("../api/areas/listar_areas.php", {
+        credentials: "include"
+      });
+
+      const data = await res.json();
+
+      if (data.ok) {
+        this.areas = data.data;
+      } else {
+        UI.toast.show("Error cargando áreas", "error");
+      }
+    } catch {
+      UI.toast.show("Error cargando áreas", "error");
+    }
   },
 
   async loadData() {
@@ -38,17 +66,19 @@ window.Modules.laboratorios = {
         this.data = data.data;
         this.filteredData = [...this.data];
         this.renderTable();
+      } else {
+        UI.toast.show(data.message, "error");
       }
-    } catch (e) {
+    } catch {
       UI.toast.show("Error cargando datos", "error");
     }
   },
 
   renderTable() {
-    const container = document.getElementById("labTable");
+    const container = document.getElementById("labTableContainer");
 
     if (this.filteredData.length === 0) {
-      container.innerHTML = "Sin registros";
+      container.innerHTML = `<div style="padding: 2rem; text-align: center; color: var(--text-light);">No hay laboratorios registrados.</div>`;
       return;
     }
 
@@ -57,25 +87,28 @@ window.Modules.laboratorios = {
         <thead>
           <tr>
             <th>ID</th>
-            <th>Laboratorio</th>
+            <th>Nombre</th>
             <th>Área</th>
             <th>Ubicación</th>
-            <th></th>
+            <th style="text-align: right;">Acciones</th>
           </tr>
         </thead>
         <tbody>
     `;
 
-    this.filteredData.forEach(l => {
+    this.filteredData.forEach(item => {
       html += `
         <tr>
-          <td>${l.ID}</td>
-          <td>${l.NOMBRELABORATORIO}</td>
-          <td>${l.NOMBREAREA}</td>
-          <td>${l.UBICACION || 'N/A'}</td>
-          <td>
-            <button onclick='Modules.laboratorios.showModal(${JSON.stringify(l)})'>✏️</button>
-            <button onclick="Modules.laboratorios.confirmDelete(${l.ID})">🗑️</button>
+          <td><span style="font-weight: 600; color: var(--primary);">#${item.ID}</span></td>
+          </td>
+          <td style="font-weight: 600;">${item.NOMBRELABORATORIO}</td>
+          <td>${item.NOMBREAREA}</td>
+          <td style="font-size: 0.85rem;">${item.UBICACION || 'N/A'}</td>
+          <td style="text-align: right;">
+            <button class="btn btn-secondary btn-sm"
+              onclick="Modules.laboratorios.showModal(${JSON.stringify(item).replace(/"/g, '&quot;')})">✏️</button>
+            <button class="btn btn-secondary btn-sm"
+              onclick="Modules.laboratorios.confirmDelete(${item.ID})">🗑️</button>
           </td>
         </tr>
       `;
@@ -85,43 +118,82 @@ window.Modules.laboratorios = {
     container.innerHTML = html;
   },
 
-  filter(q) {
-    q = q.toLowerCase();
-    this.filteredData = this.data.filter(l =>
-      l.NOMBRELABORATORIO.toLowerCase().includes(q) ||
-      l.NOMBREAREA.toLowerCase().includes(q)
+  filter(query) {
+    const q = query.toLowerCase();
+
+    this.filteredData = this.data.filter(item =>
+      item.NOMBRELABORATORIO.toLowerCase().includes(q) ||
+      item.NOMBREAREA.toLowerCase().includes(q) ||
+      String(item.ID).includes(q)
     );
+
     this.renderTable();
+  },
+
+  renderAreasOptions(selectedId = null) {
+    return this.areas.map(a => `
+      <option value="${a.ID}" ${selectedId == a.ID ? 'selected' : ''}>
+        ${a.NOMBREAREA}
+      </option>
+    `).join("");
   },
 
   showModal(item = null) {
     const isEdit = item !== null;
+    const title = isEdit ? "Editar Laboratorio" : "Registrar Laboratorio";
 
     const body = `
-      <input id="id" placeholder="ID" value="${item?.ID || ''}" ${isEdit ? 'readonly' : ''}/>
-      <input id="nombre" placeholder="Nombre" value="${item?.NOMBRELABORATORIO || ''}"/>
-      <input id="ubicacion" placeholder="Ubicación" value="${item?.UBICACION || ''}"/>
-      <input id="area" placeholder="ID Área" value="${item?.AREAS_ID || ''}"/>
+      <form id="labForm">
+        <div class="form-group">
+          <label>ID</label>
+          <input type="number" id="l_id" value="${item ? item.ID : ''}" ${isEdit ? 'readonly' : ''} required>
+        </div>
+
+        <div class="form-group">
+          <label>Nombre del Laboratorio</label>
+          <input type="text" id="l_nombre" value="${item ? item.NOMBRELABORATORIO : ''}" required>
+        </div>
+
+        <div class="form-group">
+          <label>Área</label>
+          <select id="l_area" required>
+            <option value="">Seleccione un área</option>
+            ${this.renderAreasOptions(item ? item.AREAS_ID : null)}
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label>Ubicación</label>
+          <input type="text" id="l_ubicacion" value="${item ? (item.UBICACION || '') : ''}">
+        </div>
+      </form>
     `;
 
     const footer = `
-      <button onclick="closeModal()">Cancelar</button>
-      <button id="saveBtn">Guardar</button>
+      <button class="btn btn-secondary" onclick="closeModal()">Cancelar</button>
+      <button class="btn btn-primary" id="saveLabBtn">
+        ${isEdit ? 'Actualizar' : 'Registrar'}
+      </button>
     `;
 
-    UI.modal.show(isEdit ? "Editar" : "Nuevo", body, footer);
+    UI.modal.show(title, body, footer);
 
-    document.getElementById("saveBtn")
+    document.getElementById("saveLabBtn")
       .addEventListener("click", () => this.save(isEdit));
   },
 
   async save(isEdit) {
     const data = {
-      id: document.getElementById("id").value,
-      nombreLaboratorio: document.getElementById("nombre").value,
-      ubicacion: document.getElementById("ubicacion").value,
-      areasId: document.getElementById("area").value
+      id: parseInt(document.getElementById("l_id").value),
+      nombreLaboratorio: document.getElementById("l_nombre").value.trim(),
+      ubicacion: document.getElementById("l_ubicacion").value.trim(),
+      areasId: parseInt(document.getElementById("l_area").value)
     };
+
+    if (!data.id || !data.nombreLaboratorio || !data.areasId) {
+      UI.toast.show("ID, nombre y área son obligatorios", "warning");
+      return;
+    }
 
     const url = isEdit
       ? "../api/laboratorios/editar_laboratorios.php"
@@ -131,7 +203,7 @@ window.Modules.laboratorios = {
 
     try {
       const res = await fetch(url, {
-        method: method,
+        method,
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(data),
         credentials: "include"
@@ -147,19 +219,21 @@ window.Modules.laboratorios = {
         UI.toast.show(json.message, "error");
       }
 
-    } catch (e) {
+    } catch {
       UI.toast.show("Error en request", "error");
     }
   },
 
   confirmDelete(id) {
-    const body = `¿Eliminar laboratorio ${id}?`;
+    const body = `<p>¿Seguro que deseas eliminar el laboratorio con ID <strong>${id}</strong>?</p>`;
     const footer = `
-      <button onclick="closeModal()">Cancelar</button>
-      <button onclick="Modules.laboratorios.delete(${id})">Eliminar</button>
+      <button class="btn btn-secondary" onclick="closeModal()">Cancelar</button>
+      <button class="btn btn-danger" onclick="Modules.laboratorios.delete(${id})">
+        Eliminar
+      </button>
     `;
 
-    UI.modal.show("Confirmar", body, footer);
+    UI.modal.show("Confirmar eliminación", body, footer);
   },
 
   async delete(id) {
@@ -181,7 +255,7 @@ window.Modules.laboratorios = {
         UI.toast.show(json.message, "error");
       }
 
-    } catch (e) {
+    } catch {
       UI.toast.show("Error eliminando", "error");
     }
   }
