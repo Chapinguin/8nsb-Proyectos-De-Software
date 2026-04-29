@@ -21,16 +21,17 @@ window.Modules.consultorios = {
         <div style="flex: 1; max-width: 400px;">
           <input type="text" id="consultorioSearch" class="form-group" style="margin-bottom: 0; width: 100%;" placeholder="🔍 Buscar consultorio...">
         </div>
+
         <button id="addConsultorioBtn" class="btn btn-primary">
           <span>+</span> Registrar Consultorio
         </button>
       </div>
-      
+
       <div id="consultorioTableContainer" class="table-container"></div>
     `;
 
     document.getElementById("consultorioSearch")
-      .addEventListener("input", (e) => this.filter(e.target.value));
+      .addEventListener("input", e => this.filter(e.target.value));
 
     document.getElementById("addConsultorioBtn")
       .addEventListener("click", () => this.showModal());
@@ -45,10 +46,19 @@ window.Modules.consultorios = {
       const data = await res.json();
 
       if (data.ok) {
-        this.areas = data.data;
+        this.areas = data.data.map(a => ({
+          ...a,
+          DISPLAY: a.HOSPITAL
+            ? `${a.HOSPITAL} - ${a.NOMBREAREA}`
+            : a.NOMBREAREA
+        }));
+
+        this.areas.sort((a, b) => a.DISPLAY.localeCompare(b.DISPLAY));
+
       } else {
         UI.toast.show("Error cargando áreas", "error");
       }
+
     } catch {
       UI.toast.show("Error cargando áreas", "error");
     }
@@ -69,6 +79,7 @@ window.Modules.consultorios = {
       } else {
         UI.toast.show(res.message, "error");
       }
+
     } catch {
       UI.toast.show("Error al cargar datos", "error");
     }
@@ -78,7 +89,11 @@ window.Modules.consultorios = {
     const container = document.getElementById("consultorioTableContainer");
 
     if (this.filteredData.length === 0) {
-      container.innerHTML = `<div style="padding:2rem;text-align:center;color:var(--text-light);">No hay consultorios registrados.</div>`;
+      container.innerHTML = `
+        <div style="padding:2rem;text-align:center;color:var(--text-light);">
+          No hay consultorios registrados.
+        </div>
+      `;
       return;
     }
 
@@ -97,15 +112,20 @@ window.Modules.consultorios = {
     `;
 
     this.filteredData.forEach(item => {
+
+      const area = this.areas.find(a => a.ID == item.AREAS_ID);
+      const areaDisplay = area ? area.DISPLAY : item.NOMBREAREA;
+
       html += `
         <tr>
           <td><span style="font-weight: 600; color: var(--primary);">#${item.ID}</span></td>
           <td style="font-weight:600;">${item.CONSULTORIO}</td>
-          <td>${item.NOMBREAREA}</td>
+          <td>${areaDisplay}</td>
           <td style="font-size:0.85rem;">${item.UBICACION || 'N/A'}</td>
           <td style="text-align:right;">
             <button class="btn btn-secondary btn-sm"
               onclick="Modules.consultorios.showModal(${JSON.stringify(item).replace(/"/g, '&quot;')})">✏️</button>
+
             <button class="btn btn-secondary btn-sm"
               onclick="Modules.consultorios.confirmDelete(${item.ID})">🗑️</button>
           </td>
@@ -120,11 +140,17 @@ window.Modules.consultorios = {
   filter(query) {
     const q = query.toLowerCase();
 
-    this.filteredData = this.data.filter(item =>
-      item.CONSULTORIO.toLowerCase().includes(q) ||
-      item.NOMBREAREA.toLowerCase().includes(q) ||
-      String(item.ID).includes(q)
-    );
+    this.filteredData = this.data.filter(item => {
+      const area = this.areas.find(a => a.ID == item.AREAS_ID);
+      const areaDisplay = area ? area.DISPLAY.toLowerCase() : '';
+
+      return (
+        item.CONSULTORIO.toLowerCase().includes(q) ||
+        areaDisplay.includes(q) ||
+        item.NOMBREAREA.toLowerCase().includes(q) ||
+        String(item.ID).includes(q)
+      );
+    });
 
     this.renderTable();
   },
@@ -132,7 +158,7 @@ window.Modules.consultorios = {
   renderAreasOptions(selectedId = null) {
     return this.areas.map(a => `
       <option value="${a.ID}" ${selectedId == a.ID ? 'selected' : ''}>
-        ${a.NOMBREAREA}
+        ${a.DISPLAY}
       </option>
     `).join("");
   },
@@ -146,6 +172,7 @@ window.Modules.consultorios = {
 
     const body = `
       <form id="consultorioForm">
+
         <div class="form-group">
           <label>ID</label>
           <input type="number" id="c_id" value="${item ? item.ID : ''}" ${isEdit ? 'readonly' : ''} required>
@@ -168,6 +195,7 @@ window.Modules.consultorios = {
           <label>Ubicación</label>
           <input type="text" id="c_ubicacion" value="${item ? (item.UBICACION || '') : ''}">
         </div>
+
       </form>
     `;
 
@@ -199,7 +227,7 @@ window.Modules.consultorios = {
 
     const endpoint = isEdit
       ? "editar_consultorios.php"
-      : "insertar.php";
+      : "insertar_consultorios.php";
 
     const method = isEdit ? "PUT" : "POST";
 
@@ -220,13 +248,16 @@ window.Modules.consultorios = {
       } else {
         UI.toast.show(res.message, "error");
       }
+
     } catch {
       UI.toast.show("Error al procesar", "error");
     }
   },
 
   confirmDelete(id) {
-    const body = `<p>¿Eliminar el consultorio con ID <strong>${id}</strong>?</p>`;
+    const body = `
+      <p>¿Eliminar el consultorio con ID <strong>${id}</strong>?</p>
+    `;
 
     const footer = `
       <button class="btn btn-secondary" onclick="closeModal()">Cancelar</button>
@@ -256,6 +287,7 @@ window.Modules.consultorios = {
       } else {
         UI.toast.show(res.message, "error");
       }
+
     } catch {
       UI.toast.show("Error al eliminar", "error");
     }

@@ -21,11 +21,12 @@ window.Modules.departamentos = {
         <div style="flex: 1; max-width: 400px;">
           <input type="text" id="departamentoSearch" class="form-group" style="margin-bottom: 0; width: 100%;" placeholder="🔍 Buscar departamento...">
         </div>
+
         <button id="addDepartamentoBtn" class="btn btn-primary">
           <span>+</span> Registrar Departamento
         </button>
       </div>
-      
+
       <div id="departamentoTableContainer" class="table-container"></div>
     `;
 
@@ -45,10 +46,19 @@ window.Modules.departamentos = {
       const data = await res.json();
 
       if (data.ok) {
-        this.areas = data.data;
+        this.areas = data.data.map(a => ({
+          ...a,
+          DISPLAY: a.HOSPITAL
+            ? `${a.HOSPITAL} - ${a.NOMBREAREA}`
+            : a.NOMBREAREA
+        }));
+
+        this.areas.sort((a, b) => a.DISPLAY.localeCompare(b.DISPLAY));
+
       } else {
         UI.toast.show("Error cargando áreas", "error");
       }
+
     } catch {
       UI.toast.show("Error cargando áreas", "error");
     }
@@ -69,6 +79,7 @@ window.Modules.departamentos = {
       } else {
         UI.toast.show(res.message, "error");
       }
+
     } catch {
       UI.toast.show("Error al cargar datos", "error");
     }
@@ -78,7 +89,11 @@ window.Modules.departamentos = {
     const container = document.getElementById("departamentoTableContainer");
 
     if (this.filteredData.length === 0) {
-      container.innerHTML = `<div style="padding:2rem;text-align:center;color:var(--text-light);">No hay departamentos registrados.</div>`;
+      container.innerHTML = `
+        <div style="padding:2rem;text-align:center;color:var(--text-light);">
+          No hay departamentos registrados.
+        </div>
+      `;
       return;
     }
 
@@ -97,16 +112,20 @@ window.Modules.departamentos = {
     `;
 
     this.filteredData.forEach(item => {
+
+      const area = this.areas.find(a => a.ID == item.AREAS_ID);
+      const areaDisplay = area ? area.DISPLAY : item.NOMBREAREA;
+
       html += `
         <tr>
           <td><span style="font-weight: 600; color: var(--primary);">#${item.ID}</span></td>
-          </td>
           <td style="font-weight:600;">${item.NOMBREDEPARTAMENTO}</td>
-          <td>${item.NOMBREAREA}</td>
+          <td>${areaDisplay}</td>
           <td style="font-size:0.85rem;">${item.UBICACION || 'N/A'}</td>
           <td style="text-align:right;">
             <button class="btn btn-secondary btn-sm"
               onclick="Modules.departamentos.showModal(${JSON.stringify(item).replace(/"/g, '&quot;')})">✏️</button>
+
             <button class="btn btn-secondary btn-sm"
               onclick="Modules.departamentos.confirmDelete(${item.ID})">🗑️</button>
           </td>
@@ -121,11 +140,17 @@ window.Modules.departamentos = {
   filter(query) {
     const q = query.toLowerCase();
 
-    this.filteredData = this.data.filter(item =>
-      item.NOMBREDEPARTAMENTO.toLowerCase().includes(q) ||
-      item.NOMBREAREA.toLowerCase().includes(q) ||
-      String(item.ID).includes(q)
-    );
+    this.filteredData = this.data.filter(item => {
+      const area = this.areas.find(a => a.ID == item.AREAS_ID);
+      const areaDisplay = area ? area.DISPLAY.toLowerCase() : '';
+
+      return (
+        item.NOMBREDEPARTAMENTO.toLowerCase().includes(q) ||
+        areaDisplay.includes(q) ||
+        item.NOMBREAREA.toLowerCase().includes(q) ||
+        String(item.ID).includes(q)
+      );
+    });
 
     this.renderTable();
   },
@@ -133,7 +158,7 @@ window.Modules.departamentos = {
   renderAreasOptions(selectedId = null) {
     return this.areas.map(a => `
       <option value="${a.ID}" ${selectedId == a.ID ? 'selected' : ''}>
-        ${a.NOMBREAREA}
+        ${a.DISPLAY}
       </option>
     `).join("");
   },
@@ -147,6 +172,7 @@ window.Modules.departamentos = {
 
     const body = `
       <form id="departamentoForm">
+
         <div class="form-group">
           <label>ID</label>
           <input type="number" id="d_id" value="${item ? item.ID : ''}" ${isEdit ? 'readonly' : ''} required>
@@ -169,6 +195,7 @@ window.Modules.departamentos = {
           <label>Ubicación</label>
           <input type="text" id="d_ubicacion" value="${item ? (item.UBICACION || '') : ''}">
         </div>
+
       </form>
     `;
 
@@ -221,13 +248,16 @@ window.Modules.departamentos = {
       } else {
         UI.toast.show(res.message, "error");
       }
+
     } catch {
       UI.toast.show("Error al procesar", "error");
     }
   },
 
   confirmDelete(id) {
-    const body = `<p>¿Eliminar el departamento con ID <strong>${id}</strong>?</p>`;
+    const body = `
+      <p>¿Eliminar el departamento con ID <strong>${id}</strong>?</p>
+    `;
 
     const footer = `
       <button class="btn btn-secondary" onclick="closeModal()">Cancelar</button>
@@ -257,6 +287,7 @@ window.Modules.departamentos = {
       } else {
         UI.toast.show(res.message, "error");
       }
+
     } catch {
       UI.toast.show("Error al eliminar", "error");
     }
