@@ -5,34 +5,71 @@
 window.Modules.quirofanos = {
   data: [],
   filteredData: [],
+  areas: [],
 
   init() {
     this.renderLayout();
+    this.loadAreas();
     this.loadData();
   },
 
   renderLayout() {
     const contentArea = document.getElementById("contentArea");
+
     contentArea.innerHTML = `
       <div class="card" style="margin-bottom: 1rem; display: flex; justify-content: space-between; align-items: center;">
         <div style="flex: 1; max-width: 400px;">
           <input type="text" id="quirofanoSearch" class="form-group" style="margin-bottom: 0; width: 100%;" placeholder="🔍 Buscar quirófano por nombre o área...">
         </div>
+
         <button id="addQuirofanoBtn" class="btn btn-primary">
           <span>+</span> Registrar Quirófano
         </button>
       </div>
-      
+
       <div id="quirofanoTableContainer" class="table-container"></div>
     `;
 
-    document.getElementById("quirofanoSearch").addEventListener("input", (e) => this.filter(e.target.value));
-    document.getElementById("addQuirofanoBtn").addEventListener("click", () => this.showModal());
+    document.getElementById("quirofanoSearch")
+      .addEventListener("input", e => this.filter(e.target.value));
+
+    document.getElementById("addQuirofanoBtn")
+      .addEventListener("click", () => this.showModal());
+  },
+
+  async loadAreas() {
+    try {
+      const res = await fetch("../api/areas/listar_areas.php", {
+        credentials: "include"
+      });
+
+      const data = await res.json();
+
+      if (data.ok) {
+        this.areas = data.data.map(a => ({
+          ...a,
+          DISPLAY: a.HOSPITAL 
+            ? `${a.HOSPITAL} - ${a.NOMBREAREA}` 
+            : a.NOMBREAREA
+        }));
+
+        this.areas.sort((a, b) => a.DISPLAY.localeCompare(b.DISPLAY));
+
+      } else {
+        UI.toast.show("Error cargando áreas", "error");
+      }
+
+    } catch {
+      UI.toast.show("Error cargando áreas", "error");
+    }
   },
 
   async loadData() {
     try {
-      const response = await fetch("../api/quirofanos/listar_quirofanos.php", { credentials: "include" });
+      const response = await fetch("../api/quirofanos/listar_quirofanos.php", {
+        credentials: "include"
+      });
+
       const res = await response.json();
 
       if (res.ok) {
@@ -42,6 +79,7 @@ window.Modules.quirofanos = {
       } else {
         UI.toast.show(res.message, "error");
       }
+
     } catch {
       UI.toast.show("Error al cargar datos", "error");
     }
@@ -51,7 +89,11 @@ window.Modules.quirofanos = {
     const container = document.getElementById("quirofanoTableContainer");
 
     if (this.filteredData.length === 0) {
-      container.innerHTML = `<div style="padding: 2rem; text-align: center; color: var(--text-light);">No hay quirófanos registrados.</div>`;
+      container.innerHTML = `
+        <div style="padding: 2rem; text-align: center; color: var(--text-light);">
+          No hay quirófanos registrados.
+        </div>
+      `;
       return;
     }
 
@@ -70,15 +112,24 @@ window.Modules.quirofanos = {
     `;
 
     this.filteredData.forEach(item => {
+      // 🔥 Buscar área formateada
+      const area = this.areas.find(a => a.ID == item.AREAS_ID);
+      const areaDisplay = area 
+        ? area.DISPLAY 
+        : item.NOMBREAREA;
+
       html += `
         <tr>
           <td><span style="font-weight: 600; color: var(--primary);">#${item.ID}</span></td>
           <td style="font-weight: 600;">${item.NOMBREQUIROFANO}</td>
-          <td>${item.NOMBREAREA}</td>
+          <td>${areaDisplay}</td>
           <td style="font-size: 0.85rem;">${item.UBICACION || 'N/A'}</td>
           <td style="text-align: right;">
-            <button class="btn btn-secondary btn-sm" onclick="Modules.quirofanos.showModal(${JSON.stringify(item).replace(/"/g, '&quot;')})">✏️</button>
-            <button class="btn btn-secondary btn-sm" onclick="Modules.quirofanos.confirmDelete(${item.ID})">🗑️</button>
+            <button class="btn btn-secondary btn-sm"
+              onclick="Modules.quirofanos.showModal(${JSON.stringify(item).replace(/"/g, '&quot;')})">✏️</button>
+
+            <button class="btn btn-secondary btn-sm"
+              onclick="Modules.quirofanos.confirmDelete(${item.ID})">🗑️</button>
           </td>
         </tr>
       `;
@@ -90,12 +141,28 @@ window.Modules.quirofanos = {
 
   filter(query) {
     const q = query.toLowerCase();
-    this.filteredData = this.data.filter(item =>
-      item.NOMBREQUIROFANO.toLowerCase().includes(q) ||
-      item.NOMBREAREA.toLowerCase().includes(q) ||
-      String(item.ID).includes(q)
-    );
+
+    this.filteredData = this.data.filter(item => {
+      const area = this.areas.find(a => a.ID == item.AREAS_ID);
+      const areaDisplay = area ? area.DISPLAY.toLowerCase() : '';
+
+      return (
+        item.NOMBREQUIROFANO.toLowerCase().includes(q) ||
+        areaDisplay.includes(q) ||
+        item.NOMBREAREA.toLowerCase().includes(q) ||
+        String(item.ID).includes(q)
+      );
+    });
+
     this.renderTable();
+  },
+
+  renderAreasOptions(selectedId = null) {
+    return this.areas.map(a => `
+      <option value="${a.ID}" ${selectedId == a.ID ? 'selected' : ''}>
+        ${a.DISPLAY}
+      </option>
+    `).join("");
   },
 
   showModal(item = null) {
@@ -104,6 +171,7 @@ window.Modules.quirofanos = {
 
     const body = `
       <form id="quirofanoForm">
+
         <div class="form-group">
           <label>ID</label>
           <input type="number" id="q_id" value="${item ? item.ID : ''}" ${isEdit ? 'readonly' : ''} required>
@@ -115,25 +183,32 @@ window.Modules.quirofanos = {
         </div>
 
         <div class="form-group">
-          <label>Área (ID)</label>
-          <input type="number" id="q_area" value="${item ? item.AREAS_ID : ''}" required>
+          <label>Área</label>
+          <select id="q_area" required>
+            <option value="">Seleccione un área</option>
+            ${this.renderAreasOptions(item ? item.AREAS_ID : null)}
+          </select>
         </div>
 
         <div class="form-group">
           <label>Ubicación</label>
           <input type="text" id="q_ubicacion" value="${item ? (item.UBICACION || '') : ''}">
         </div>
+
       </form>
     `;
 
     const footer = `
       <button class="btn btn-secondary" onclick="closeModal()">Cancelar</button>
-      <button class="btn btn-primary" id="saveQuirofanoBtn">${isEdit ? 'Actualizar' : 'Registrar'}</button>
+      <button class="btn btn-primary" id="saveQuirofanoBtn">
+        ${isEdit ? 'Actualizar' : 'Registrar'}
+      </button>
     `;
 
     UI.modal.show(title, body, footer);
 
-    document.getElementById("saveQuirofanoBtn").addEventListener("click", () => this.save(isEdit));
+    document.getElementById("saveQuirofanoBtn")
+      .addEventListener("click", () => this.save(isEdit));
   },
 
   async save(isEdit) {
@@ -169,17 +244,24 @@ window.Modules.quirofanos = {
       } else {
         UI.toast.show(res.message, "error");
       }
+
     } catch {
       UI.toast.show("Error al procesar la solicitud", "error");
     }
   },
 
   confirmDelete(id) {
-    const body = `<p>¿Seguro que deseas eliminar el quirófano con ID <strong>${id}</strong>?</p>`;
+    const body = `
+      <p>¿Seguro que deseas eliminar el quirófano con ID <strong>${id}</strong>?</p>
+    `;
+
     const footer = `
       <button class="btn btn-secondary" onclick="closeModal()">Cancelar</button>
-      <button class="btn btn-danger" onclick="Modules.quirofanos.delete(${id})">Eliminar</button>
+      <button class="btn btn-danger" onclick="Modules.quirofanos.delete(${id})">
+        Eliminar
+      </button>
     `;
+
     UI.modal.show("Confirmar eliminación", body, footer);
   },
 
@@ -201,6 +283,7 @@ window.Modules.quirofanos = {
       } else {
         UI.toast.show(res.message, "error");
       }
+
     } catch {
       UI.toast.show("Error al eliminar", "error");
     }
