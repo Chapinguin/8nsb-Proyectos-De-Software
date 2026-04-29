@@ -318,4 +318,4 @@
 -- ('Recepcion', 'Gestion de ingresos y egresos'),
 -- ('Medico', 'Gestion de consultas, estudios y procedimientos'),
 -- ('Laboratorio', 'Gestion de estudios'),
--- -- ('Quirofano', 'Gestion de procedimientos quirurgicos');
+-- ('Quirofano', 'Gestion de procedimientos quirurgicos');
