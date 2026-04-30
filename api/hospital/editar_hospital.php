@@ -3,7 +3,7 @@ require_once __DIR__ . "/../../config/database.php";
 require_once __DIR__ . "/../../helpers/auth.php";
 require_once __DIR__ . "/../../helpers/response.php";
 
-if ($_SERVER["REQUEST_METHOD"] !== "PUT") {
+if ($_SERVER["REQUEST_METHOD"] !== "POST") {
     jsonResponse(405, [
         "ok" => false,
         "message" => "Método no permitido"
@@ -14,7 +14,7 @@ requireRole("Administrador");
 
 $input = json_decode(file_get_contents("php://input"), true);
 
-$uniOrg = trim($input["uniOrg"] ?? "");
+$uniOrg = trim($input["uni_org"] ?? "");
 $nomuo = trim($input["nomuo"] ?? "");
 $direccion = trim($input["direccion"] ?? "");
 $director = trim($input["director"] ?? "");

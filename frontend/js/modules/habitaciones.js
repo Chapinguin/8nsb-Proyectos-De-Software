@@ -3,15 +3,20 @@
  */
 
 window.Modules.habitaciones = {
-  data: [],
-  filteredData: [],
-  areas: [],
+data: [],
+filteredData: [],
+hospitales: [],
+areas: [],
 
   async init() {
-    this.renderLayout();
-    await this.loadAreas();
-    this.loadData();
-  },
+  this.renderLayout();
+
+  await Promise.all([
+    this.loadHospitales()
+  ]);
+
+  await this.loadData();
+},
 
   renderLayout() {
     const contentArea = document.getElementById("contentArea");
@@ -33,16 +38,40 @@ window.Modules.habitaciones = {
     document.getElementById("habitacionesSearch").addEventListener("input", (e) => this.filter(e.target.value));
     document.getElementById("addHabitacionBtn").addEventListener("click", () => this.showModal());
   },
+async loadHospitales() {
+  try {
+    const response = await fetch("../api/hospital/listar_hospital.php", { 
+      credentials: "include" 
+    });
 
-  async loadAreas() {
-    try {
-      const response = await fetch("../api/areas/listar_areas.php", { credentials: "include" });
-      const res = await response.json();
-      if (res.ok) this.areas = res.data;
-    } catch (error) {
-      console.error("Error al cargar áreas:", error);
+    const res = await response.json();
+
+    if (res.ok) {
+      this.hospitales = res.data;
+    } else {
+      this.hospitales = [];
+      UI.toast.show(res.message || "No se pudieron cargar los hospitales", "error");
     }
-  },
+  } catch (error) {
+    console.error("Error al cargar hospitales:", error);
+    this.hospitales = [];
+  }
+},
+
+async loadAreasPorHospital(hospitalId) {
+  try {
+    const response = await fetch(`../api/areas/listar_areas_por_hospital.php?hospital_id=${hospitalId}`, { 
+      credentials: "include" 
+    });
+
+    const res = await response.json();
+
+    return res.ok ? res.data : [];
+  } catch (error) {
+    console.error("Error al cargar áreas por hospital:", error);
+    return [];
+  }
+},
 
   async loadData() {
     try {
@@ -116,56 +145,89 @@ window.Modules.habitaciones = {
     this.renderTable();
   },
 
-  showModal(item = null) {
-    const isEdit = item !== null;
-    const title = isEdit ? "Editar Habitación" : "Registrar Nueva Habitación";
-    
-    let areaOptions = this.areas.map(a => 
-      `<option value="${a.ID}" ${isEdit && item.AREAS_ID == a.ID ? 'selected' : ''}>${a.NOMBREAREA}</option>`
-    ).join('');
+  async showModal(item = null) {
+  const isEdit = item !== null;
+  const title = isEdit ? "Editar Habitación" : "Registrar Nueva Habitación";
 
-    const body = `
-      <form id="habitacionForm">
-        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
-          <div class="form-group">
-            <label for="h_id">ID Habitación</label>
-            <input type="number" id="h_id" value="${item ? item.ID : ''}" ${isEdit ? 'readonly' : ''} placeholder="Ej: 101" required>
-          </div>
-          <div class="form-group">
-            <label for="h_nombre">Nombre/N° Habitación</label>
-            <input type="text" id="h_nombre" value="${item ? item.NOMBREHABITACION : ''}" placeholder="Ej: Habitación 101" required>
-          </div>
+  let hospitalOptions = this.hospitales.map(h =>
+    `<option value="${h.UNI_ORG}" ${isEdit && item.HOSPITAL_UNI_ORG == h.UNI_ORG ? 'selected' : ''}>${h.NOMUO}</option>`
+  ).join('');
+
+  const body = `
+    <form id="habitacionForm">
+      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+        <div class="form-group">
+          <label for="h_id">ID Habitación</label>
+          <input type="number" id="h_id" value="${item ? item.ID : ''}" ${isEdit ? 'readonly' : ''} placeholder="Ej: 101" required>
         </div>
 
         <div class="form-group">
-          <label for="h_area">Área Hospitalaria</label>
-          <select id="h_area" required>
-            <option value="">Seleccione un área...</option>
-            ${areaOptions}
-          </select>
+          <label for="h_nombre">Nombre/N° Habitación</label>
+          <input type="text" id="h_nombre" value="${item ? item.NOMBREHABITACION : ''}" placeholder="Ej: Habitación 101" required>
         </div>
+      </div>
 
-        <div class="form-group">
-          <label for="h_ubicacion">Ubicación Específica</label>
-          <input type="text" id="h_ubicacion" value="${item ? item.UBICACION || '' : ''}" placeholder="Ej: Piso 1, Ala Norte">
-        </div>
+      <div class="form-group">
+        <label for="h_hospital">Hospital</label>
+        <select id="h_hospital" required>
+          <option value="">Seleccione un hospital...</option>
+          ${hospitalOptions}
+        </select>
+      </div>
 
-        <div class="form-group">
-          <label for="h_equipamiento">Equipamiento / Notas</label>
-          <textarea id="h_equipamiento" rows="3" placeholder="Ej: Cama articulada, Monitor de signos vitales...">${item ? item.EQUIPAMIENTO || '' : ''}</textarea>
-        </div>
-      </form>
-    `;
+      <div class="form-group">
+        <label for="h_area">Área Hospitalaria</label>
+        <select id="h_area" required>
+          <option value="">Seleccione un área...</option>
+        </select>
+      </div>
 
-    const footer = `
-      <button class="btn btn-secondary" onclick="closeModal()">Cancelar</button>
-      <button class="btn btn-primary" id="saveHabitacionBtn">${isEdit ? 'Actualizar Habitación' : 'Registrar Habitación'}</button>
-    `;
+      <div class="form-group">
+        <label for="h_ubicacion">Ubicación Específica</label>
+        <input type="text" id="h_ubicacion" value="${item ? item.UBICACION || '' : ''}" placeholder="Ej: Piso 1, Ala Norte">
+      </div>
 
-    UI.modal.show(title, body, footer);
+      <div class="form-group">
+        <label for="h_equipamiento">Equipamiento / Notas</label>
+        <textarea id="h_equipamiento" rows="3" placeholder="Ej: Cama articulada, Monitor de signos vitales...">${item ? item.EQUIPAMIENTO || '' : ''}</textarea>
+      </div>
+    </form>
+  `;
 
-    document.getElementById("saveHabitacionBtn").addEventListener("click", () => this.save(isEdit));
-  },
+  const footer = `
+    <button class="btn btn-secondary" onclick="closeModal()">Cancelar</button>
+    <button class="btn btn-primary" id="saveHabitacionBtn">${isEdit ? 'Actualizar Habitación' : 'Registrar Habitación'}</button>
+  `;
+
+  UI.modal.show(title, body, footer);
+
+  const hospitalSelect = document.getElementById("h_hospital");
+  const areaSelect = document.getElementById("h_area");
+
+  hospitalSelect.addEventListener("change", async () => {
+    const hospitalId = hospitalSelect.value;
+
+    areaSelect.innerHTML = '<option value="">Cargando áreas...</option>';
+
+    if (hospitalId) {
+      const areas = await this.loadAreasPorHospital(hospitalId);
+
+      areaSelect.innerHTML = '<option value="">Seleccione un área...</option>' +
+        areas.map(a => `<option value="${a.ID}">${a.NOMBREAREA}</option>`).join('');
+    } else {
+      areaSelect.innerHTML = '<option value="">Seleccione un área...</option>';
+    }
+  });
+
+  if (isEdit && item.HOSPITAL_UNI_ORG) {
+    const areas = await this.loadAreasPorHospital(item.HOSPITAL_UNI_ORG);
+
+    areaSelect.innerHTML = '<option value="">Seleccione un área...</option>' +
+      areas.map(a => `<option value="${a.ID}" ${item.AREAS_ID == a.ID ? 'selected' : ''}>${a.NOMBREAREA}</option>`).join('');
+  }
+
+  document.getElementById("saveHabitacionBtn").addEventListener("click", () => this.save(isEdit));
+},
 
   async save(isEdit) {
     const data = {

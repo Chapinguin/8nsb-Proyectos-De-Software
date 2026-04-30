@@ -33,6 +33,8 @@ try {
                 i.ID,
                 i.HABITACIONES_ID,
                 h.NOMBREHABITACION,
+                h.AREAS_ID,
+                a.HOSPITAL_UNI_ORG,
                 i.TIPO,
                 i.FECHAINGRESO,
                 i.OBSERVACIONES,
@@ -42,6 +44,7 @@ try {
                 m.APELLIDOMATERNO
             FROM INGRESOS i
             INNER JOIN HABITACIONES h ON h.ID = i.HABITACIONES_ID
+            INNER JOIN AREAS a ON a.ID = h.AREAS_ID
             INNER JOIN MEDICOS m ON m.EXPEDIENTE = i.MEDICOS_EXPEDIENTE
             WHERE i.ID = :id
               AND i.HABITACIONES_ID = :habitacionesId

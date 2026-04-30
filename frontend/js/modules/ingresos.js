@@ -8,14 +8,22 @@ window.Modules.ingresos = {
   filteredIngresos: [],
   filteredEgresos: [],
   medicos: [],
+  hospitales: [],
+  areas: [],
   habitaciones: [],
   activeTab: 'ingresos',
 
   async init() {
-    this.renderLayout();
-    await Promise.all([this.loadMedicos(), this.loadHabitaciones()]);
-    this.loadData();
-  },
+  this.renderLayout();
+
+  await Promise.all([
+    this.loadMedicos(),
+    this.loadHospitales(),
+    this.loadHabitaciones()
+  ]);
+
+  await this.loadData();
+},
 
   renderLayout() {
     const contentArea = document.getElementById("contentArea");
@@ -77,6 +85,50 @@ window.Modules.ingresos = {
       if (res.ok) this.medicos = res.data;
     } catch (error) {
       console.error("Error al cargar médicos:", error);
+    }
+  },
+
+async loadHospitales() {
+  try {
+    const response = await fetch("../api/hospital/listar_hospital.php", {
+      credentials: "include"
+    });
+
+    const res = await response.json();
+
+    console.log("Hospitales recibidos:", res);
+
+    if (res.ok) {
+      this.hospitales = res.data;
+    } else {
+      this.hospitales = [];
+      UI.toast.show(res.message || "No se pudieron cargar los hospitales", "error");
+    }
+  } catch (error) {
+    console.error("Error al cargar hospitales:", error);
+    this.hospitales = [];
+  }
+},
+
+  async loadAreas(hospitalId) {
+    try {
+      const response = await fetch(`../api/areas/listar_areas_por_hospital.php?hospital_id=${hospitalId}`, { credentials: "include" });
+      const res = await response.json();
+      return res.ok ? res.data : [];
+    } catch (error) {
+      console.error("Error al cargar áreas:", error);
+      return [];
+    }
+  },
+
+  async loadHabitacionesPorArea(areaId) {
+    try {
+      const response = await fetch(`../api/habitaciones/listar_por_area.php?area_id=${areaId}`, { credentials: "include" });
+      const res = await response.json();
+      return res.ok ? res.data : [];
+    } catch (error) {
+      console.error("Error al cargar habitaciones:", error);
+      return [];
     }
   },
 
@@ -149,7 +201,7 @@ window.Modules.ingresos = {
           <td><span style="font-weight: 600; color: var(--primary);">#${item.ID}</span></td>
           <td>
             <div style="font-weight: 600;">${item.NOMBREHABITACION}</div>
-            <div style="font-size: 0.75rem; color: var(--text-light);">ID: ${item.HABITACIONES_ID}</div>
+            <div style="font-size: 0.75rem; color: var(--text-light);">${item.HOSPITAL_UNI_ORG} - Area ID: ${item.AREAS_ID}</div>
           </td>
           <td>${subInfo}</td>
           <td style="font-size: 0.85rem;">${new Date(fecha).toLocaleString()}</td>
@@ -190,7 +242,7 @@ window.Modules.ingresos = {
     this.renderTable();
   },
 
-  showIngresoModal(item = null) {
+  async showIngresoModal(item = null) {
     const isEdit = item !== null;
     const title = isEdit ? "Editar Ingreso" : "Registrar Nuevo Ingreso";
     
@@ -198,8 +250,8 @@ window.Modules.ingresos = {
       `<option value="${m.EXPEDIENTE}" ${isEdit && item.MEDICOS_EXPEDIENTE == m.EXPEDIENTE ? 'selected' : ''}>${m.NOMBRE} ${m.APELLIDOPATERNO} (${m.EXPEDIENTE})</option>`
     ).join('');
 
-    let habOptions = this.habitaciones.map(h => 
-      `<option value="${h.ID}" ${isEdit && item.HABITACIONES_ID == h.ID ? 'selected' : ''}>${h.NOMBREHABITACION} - ${h.NOMBREAREA}</option>`
+    let hospitalOptions = this.hospitales.map(h => 
+      `<option value="${h.UNI_ORG}" ${isEdit && item.HOSPITAL_UNI_ORG == h.UNI_ORG ? 'selected' : ''}>${h.NOMUO}</option>`
     ).join('');
 
     const body = `
@@ -216,10 +268,24 @@ window.Modules.ingresos = {
         </div>
 
         <div class="form-group">
-          <label for="i_habitacion">Habitación / Área</label>
+          <label for="i_hospital">Hospital</label>
+          <select id="i_hospital" required ${isEdit ? 'disabled' : ''}>
+            <option value="">Seleccione un hospital...</option>
+            ${hospitalOptions}
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label for="i_area">Área</label>
+          <select id="i_area" required ${isEdit ? 'disabled' : ''}>
+            <option value="">Seleccione un área...</option>
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label for="i_habitacion">Habitación</label>
           <select id="i_habitacion" required ${isEdit ? 'disabled' : ''}>
             <option value="">Seleccione una habitación...</option>
-            ${habOptions}
           </select>
         </div>
 
@@ -249,6 +315,63 @@ window.Modules.ingresos = {
     `;
 
     UI.modal.show(title, body, footer);
+
+    const hSelect = document.getElementById("i_hospital");
+    const aSelect = document.getElementById("i_area");
+    const habSelect = document.getElementById("i_habitacion");
+
+   hSelect.addEventListener("change", async () => {
+  const hId = hSelect.value;
+
+  console.log("Hospital seleccionado:", hId);
+
+  aSelect.innerHTML = '<option value="">Cargando áreas...</option>';
+  habSelect.innerHTML = '<option value="">Seleccione una habitación...</option>';
+
+  if (hId) {
+    const areas = await this.loadAreas(hId);
+
+    console.log("Áreas recibidas:", areas);
+
+    aSelect.innerHTML = '<option value="">Seleccione un área...</option>' +
+      areas.map(a => `<option value="${a.ID}">${a.NOMBREAREA}</option>`).join('');
+  } else {
+    aSelect.innerHTML = '<option value="">Seleccione un área...</option>';
+  }
+});
+
+aSelect.addEventListener("change", async () => {
+  const aId = aSelect.value;
+
+  console.log("Área seleccionada:", aId);
+
+  habSelect.innerHTML = '<option value="">Cargando habitaciones...</option>';
+
+  if (aId) {
+    const habs = await this.loadHabitacionesPorArea(aId);
+
+    console.log("Habitaciones recibidas:", habs);
+
+    habSelect.innerHTML = '<option value="">Seleccione una habitación...</option>' +
+      habs.map(h => `<option value="${h.ID}">${h.NOMBREHABITACION}</option>`).join('');
+  } else {
+    habSelect.innerHTML = '<option value="">Seleccione una habitación...</option>';
+  }
+});
+
+    // Si es edición, cargar los datos en cascada
+    if (isEdit) {
+      // Cargar Áreas
+      const areas = await this.loadAreas(item.HOSPITAL_UNI_ORG);
+      aSelect.innerHTML = '<option value="">Seleccione un área...</option>' + 
+        areas.map(a => `<option value="${a.ID}" ${item.AREAS_ID == a.ID ? 'selected' : ''}>${a.NOMBREAREA}</option>`).join('');
+      
+      // Cargar Habitaciones
+      const habs = await this.loadHabitacionesPorArea(item.AREAS_ID);
+      habSelect.innerHTML = '<option value="">Seleccione una habitación...</option>' + 
+        habs.map(h => `<option value="${h.ID}" ${item.HABITACIONES_ID == h.ID ? 'selected' : ''}>${h.NOMBREHABITACION}</option>`).join('');
+    }
+
     document.getElementById("saveIngresoBtn").addEventListener("click", () => this.saveIngreso(isEdit));
   },
 
@@ -392,26 +515,31 @@ window.Modules.ingresos = {
     );
   },
 
-  async deleteIngreso(id, habId) {
-    try {
-      const response = await fetch("../api/ingresos/eliminar.php", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ id, habitacionesId: habId }),
-        credentials: "include"
-      });
-      const res = await response.json();
-      if (res.ok) {
-        UI.toast.show(res.message, "success");
-        UI.modal.close();
-        this.loadData();
-      } else {
-        UI.toast.show(res.message, "error");
-      }
-    } catch (error) {
-      UI.toast.show("Error al eliminar", "error");
+async deleteIngreso(id, habId) {
+  try {
+    const response = await fetch("../api/ingresos/eliminar.php", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ 
+        id: id, 
+        habitacionesId: habId 
+      }),
+      credentials: "include"
+    });
+
+    const res = await response.json();
+
+    if (res.ok) {
+      UI.toast.show(res.message, "success");
+      UI.modal.close();
+      this.loadData();
+    } else {
+      UI.toast.show(res.message, "error");
     }
-  },
+  } catch (error) {
+    UI.toast.show("Error al eliminar", "error");
+  }
+},
 
   confirmDeleteEgreso(id, habId) {
     UI.modal.show(

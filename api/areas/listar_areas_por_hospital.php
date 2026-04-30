@@ -40,7 +40,7 @@ try {
             ORDER BY a.ID ASC";
 
     $stmt = $conn->prepare($sql);
-    $stmt->bindParam(":hospital_id", $hospital_id, PDO::PARAM_INT);
+    $stmt->bindParam(":hospital_id", $hospital_id, PDO::PARAM_STR);
     $stmt->execute();
 
     $data = $stmt->fetchAll();

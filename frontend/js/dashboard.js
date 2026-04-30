@@ -69,8 +69,20 @@ const MODULES_CONFIG = [
   },
   {
     id: 'estudios', 
-    label: 'Estudios', 
+    label: 'Reporte de Estudios', 
+    icon: '📊', 
+    roles: ['Administrador', 'Medico', 'Laboratorio'] 
+  },
+  {
+    id: 'tipoestudios', 
+    label: 'Configurar Estudios', 
     icon: '🧪', 
+    roles: ['Administrador', 'Laboratorio'] 
+  },
+  {
+    id: 'estudios_gestion', 
+    label: 'Registro de Estudios', 
+    icon: '📝', 
     roles: ['Administrador', 'Medico', 'Laboratorio'] 
   },
   {

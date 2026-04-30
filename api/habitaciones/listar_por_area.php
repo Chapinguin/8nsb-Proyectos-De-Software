@@ -12,40 +12,47 @@ if ($_SERVER["REQUEST_METHOD"] !== "GET") {
 
 requireLogin();
 
+// Validar parámetro
+if (!isset($_GET["area_id"]) || empty($_GET["area_id"])) {
+    jsonResponse(400, [
+        "ok" => false,
+        "message" => "El parámetro area_id es obligatorio"
+    ]);
+}
+
+$area_id = $_GET["area_id"];
+
 try {
     $database = new Database();
     $conn = $database->getConnection();
 
     $sql = "SELECT 
-                i.ID,
-                i.HABITACIONES_ID,
+                h.ID,
                 h.NOMBREHABITACION,
+                h.UBICACION,
+                h.EQUIPAMIENTO,
                 h.AREAS_ID,
-                a.HOSPITAL_UNI_ORG,
-                i.TIPO,
-                i.FECHAINGRESO,
-                i.OBSERVACIONES,
-                i.MEDICOS_EXPEDIENTE,
-                m.NOMBRE,
-                m.APELLIDOPATERNO,
-                m.APELLIDOMATERNO
-            FROM INGRESOS i
-            INNER JOIN HABITACIONES h ON h.ID = i.HABITACIONES_ID
+                a.NOMBREAREA
+            FROM HABITACIONES h
             INNER JOIN AREAS a ON a.ID = h.AREAS_ID
-            INNER JOIN MEDICOS m ON m.EXPEDIENTE = i.MEDICOS_EXPEDIENTE
-            ORDER BY i.ID ASC, i.HABITACIONES_ID ASC";
+            WHERE h.AREAS_ID = :area_id
+            ORDER BY h.ID ASC";
 
-    $stmt = $conn->query($sql);
+    $stmt = $conn->prepare($sql);
+    $stmt->bindParam(":area_id", $area_id);
+    $stmt->execute();
+
     $data = $stmt->fetchAll();
 
     jsonResponse(200, [
         "ok" => true,
         "data" => $data
     ]);
+
 } catch (Throwable $e) {
     jsonResponse(500, [
         "ok" => false,
-        "message" => "Error al listar ingresos",
+        "message" => "Error al listar habitaciones por área",
         "error" => $e->getMessage()
     ]);
 }

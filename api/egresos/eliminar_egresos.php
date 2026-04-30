@@ -3,7 +3,7 @@ require_once __DIR__ . "/../../config/database.php";
 require_once __DIR__ . "/../../helpers/auth.php";
 require_once __DIR__ . "/../../helpers/response.php";
 
-if ($_SERVER["REQUEST_METHOD"] !== "DELETE") {
+if ($_SERVER["REQUEST_METHOD"] !== "POST") {
     jsonResponse(405, [
         "ok" => false,
         "message" => "Método no permitido"

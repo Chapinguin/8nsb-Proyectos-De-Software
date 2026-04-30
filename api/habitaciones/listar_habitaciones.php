@@ -22,9 +22,14 @@ try {
                 h.UBICACION,
                 h.EQUIPAMIENTO,
                 h.AREAS_ID,
-                a.NOMBREAREA
+                a.NOMBREAREA,
+                a.HOSPITAL_UNI_ORG,
+                ho.NOMUO AS HOSPITAL
             FROM HABITACIONES h
-            INNER JOIN AREAS a ON a.ID = h.AREAS_ID
+            INNER JOIN AREAS a 
+                ON a.ID = h.AREAS_ID
+            INNER JOIN HOSPITAL ho 
+                ON ho.UNI_ORG = a.HOSPITAL_UNI_ORG
             ORDER BY h.ID ASC";
 
     $stmt = $conn->query($sql);
