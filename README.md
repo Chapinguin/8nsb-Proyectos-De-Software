@@ -44,7 +44,10 @@ Este proyecto es un sistema integral de gestión hospitalaria diseñado para adm
    ```
 
 4. **Crear Usuario Administrador:**
-   Si es la primera vez que lo usas, puedes ejecutar el script `crear_admin.php` desde tu navegador para generar las credenciales iniciales.
+   Si es la primera vez que lo usas, puedes ejecutar el script `crear_admin.php` desde tu navegador para generar las credenciales iniciales. DESCOMENTEN EL CREAR_ADMIN.PHP DESPUES:
+   PARA CREAR EL ADMIN YA CORRIENDO XAMPP CON SQL APACHE Y EL FILEZILA, CORRAN EN SU NAVEGADOR:
+   
+   http://localhost/8nsb-Proyectos-De-Software/crear_admin.php Y LES VA A MANDAR UN MSJ DE EXITO DESPUES DE ESO YA SE CREÒ
 
 ##  Cómo Correr el Proyecto
 
