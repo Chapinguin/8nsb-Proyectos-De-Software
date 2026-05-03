@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Hospital HIS - Dashboard</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="./css/styles.css" />
+</head>
+<body>
+  <div class="app-container">
+    <!-- Sidebar -->
+    <aside class="sidebar">
+      <div class="sidebar-header">
+        <h2>🏥 Hospital HIS</h2>
+      </div>
+      <nav class="nav-links" id="sidebarNav">
+        <!-- Los enlaces se generarán dinámicamente según el rol -->
+      </nav>
+      <div class="sidebar-footer">
+        <button id="logoutBtn" class="btn btn-secondary" style="width: 100%; justify-content: center;">
+          Cerrar sesión
+        </button>
+      </div>
+    </aside>
+
+    <!-- Main Content -->
+    <main class="main-content">
+      <header class="top-bar">
+        <h1 id="moduleTitle">Dashboard</h1>
+        <div class="user-pill card" style="margin-bottom: 0; padding: 0.5rem 1rem; display: flex; align-items: center; gap: 0.75rem;">
+          <span id="userNombre" style="font-weight: 600;">...</span>
+          <span id="userBadge" class="skeleton" style="padding: 0.25rem 0.75rem; border-radius: 20px; font-size: 0.75rem; background: var(--background);">Cargando...</span>
+        </div>
+      </header>
+
+      <div id="contentArea">
+        <!-- El contenido dinámico se cargará aquí -->
+        <div class="card">
+          <h2>Bienvenido al sistema</h2>
+          <p>Selecciona un módulo en el panel lateral para comenzar a gestionar el hospital.</p>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <!-- Modal Container -->
+  <div id="modalOverlay" class="modal-overlay">
+    <div class="modal" id="modal">
+      <div class="modal-header">
+        <h3 id="modalTitle">Título del Modal</h3>
+        <button class="btn btn-secondary" onclick="closeModal()">✕</button>
+      </div>
+      <div class="modal-body" id="modalBody">
+        <!-- Contenido del modal dinámico -->
+      </div>
+      <div class="modal-footer" id="modalFooter">
+        <!-- Botones del modal dinámicos -->
+      </div>
+    </div>
+  </div>
+
+  <!-- Toast Container -->
+  <div id="toastContainer" class="toast-container"></div>
+
+  <!-- Scripts -->
+  <script src="./js/ui-core.js"></script>
+  <script src="./js/dashboard.js"></script>
+  <!-- Los scripts de módulos se cargarán dinámicamente -->
+</body>
+</html>
